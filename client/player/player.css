@@ -1,19 +1,2 @@
-.card {
-  color: white;
-  text-align: center;
-  font-size: 1rem;
-  background: #912121;
-}
-
-.card-placeholder .card {
-  height: 100%;
-}
-
-.card-placeholder > div {
-  height: 200px;
-  border-radius: 10px;
-  border: 1px black dashed;
-
-}
 
 

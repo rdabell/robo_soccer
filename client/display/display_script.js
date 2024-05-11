@@ -8,6 +8,9 @@ function messageHandler(message) {
     case 'board':
       RedrawBoard(parsedMessage.data);
       break;
+    case 'card':
+      DrawCard(parsedMessage.data);
+      break;
 
   }
 }
@@ -23,11 +26,26 @@ $(() => {
   canvas = document.getElementById('canvas');
   ctx = canvas.getContext('2d');
 
+  $('#currentCard #card').load('../player/card.html');
 });
 
 let gd;
 
+function DrawCard(pCard) {
+  const name = pCard.player;
+  const card = pCard.card;
+  $('#player').text(name).attr('style', `color: ${pCard.color}`);
+  
+  $('#card-priority').text(card.p);
+  $('#card-text').text(GetText(card.a));
+  $('#card-icon').removeClass().addClass('fa-solid').addClass(GetIcon(card.a));
+
+  $('#currentCard').addClass('show');
+  }
+
 function RedrawBoard(board) {
+  $('#currentCard').removeClass('show');
+
   w = canvas.width = canvas.clientWidth;
   h = canvas.height = canvas.clientHeight;
   ctx.reset();
@@ -119,8 +137,11 @@ function DrawField(board) {
 function DrawBall(ball) {
   ctx.fillStyle = '#000';
   ctx.beginPath();  
-  ctx.arc(ball.x * gd + gd/2, ball.y * gd + gd/2, gd * .33, 0, Math.PI * 2);
+  ctx.arc(ball.pos.x * gd + gd/2, ball.pos.y * gd + gd/2, gd * .33, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFF';
   ctx.fill();
+  ctx.strokeStyle = '#000';
+  ctx.stroke();
 }
 
 function DrawRobots(board) {

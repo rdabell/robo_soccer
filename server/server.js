@@ -37,7 +37,17 @@ wss.on('connection', (ws) => {
         if (p != null) {
           playerMap.set(p.id, ws);
         }
+
         sendMessage(ws, 'player', p);
+
+        if (p != null) {
+          // if the round has already started and the player was dealt cards,
+          // then send the dealt cards to the player
+          const cards = currentDeal?.get(p.id);
+          if (cards) {
+            sendMessage(ws, 'cards', cards);
+          }
+        }
         break;
       case 'player':
         playerMap.set(parsedMessage.data.id, ws);
@@ -117,12 +127,18 @@ function publishBoard() {
   });
 }
 
+function publishCard(pCard) {
+  displayWs.forEach(ws => {
+    sendMessage(ws, 'card', pCard);
+  });
+} 
+
 function addNewPlayer(id, username) {
   try {
     let player = new Game.Player(id, username);
     let team = board.addPlayer(player);
     if (team) {
-      const ws = this.playerMap.get(id);
+      const ws = playerMap.get(id);
       sendMessage(ws, 'team', {name: team.name, color: team.color});
     }
   } catch (e) {
@@ -165,15 +181,28 @@ function playRound() {
   //displayTurn(allTurnsInRound[index]);
 
   let interval = setInterval(() => {
-    playTurn(allTurnsInRound[index]);
+    // spend 3 seconds between turns to show the card them move the player
+    const move = allTurnsInRound[index++];
+    const player = board.hasPlayer(move.id);
+    const team1 = board.team1.hasPlayer(move.id);
+    // show the card on the display
+    publishCard({player: player.name, color: team1 ? board.team1.color : board.team2.color, card: move.card});
+  
+    // wait to play to the turn until after the card has been displayed
+    setTimeout(() => {
+      // remove the card and update the board
+      playTurn(move);
 
-    index++;
-    if (index >= allTurnsInRound.length) {
-      currentDeal.clear();
-      returnCards.clear();
-      shuffleAndDeal();
-      clearInterval(interval);
-    }
+      // if all the moves have been played then clear the deals and shuffle and deal the cards
+      if (index >= allTurnsInRound.length) {
+        currentDeal.clear();
+        returnCards.clear();
+        shuffleAndDeal();
+        clearInterval(interval);
+        fixPlayers();
+      }  
+    }, 2000);
+
   }, 3000);
 }
 
