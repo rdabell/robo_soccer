@@ -131,7 +131,12 @@ function publishCard(pCard) {
   displayWs.forEach(ws => {
     sendMessage(ws, 'card', pCard);
   });
-} 
+}
+
+function notifyTime(id) {
+  const ws = playerMap.get(id);
+  sendMessage(ws, 'time', {});
+}
 
 function addNewPlayer(id, username) {
   try {
@@ -143,7 +148,7 @@ function addNewPlayer(id, username) {
     }
   } catch (e) {
     console.log(`Something went wrong while creating the player: ${e.message}`);
-  }  
+  }
 }
 
 function playerCards(id, cardIndexes) {
@@ -161,6 +166,12 @@ function playerCards(id, cardIndexes) {
 
   if (remainingT1.length === 0 && remainingT2.length === 0) {
     playRound();
+  } else if (remainingT1.length === 0) {
+    // notify Team 2 they have limited time.
+    remainingT2.forEach(id => notifyTime(id));
+  } else if (remainingT2.length === 0) {
+    // notify Team 1 they have limited time.
+    remainingT1.forEach(id => notifyTime(id));
   }
 }
 
@@ -177,29 +188,28 @@ function playRound() {
   }
 
   let index = 0;
-  // display turn card
-  //displayTurn(allTurnsInRound[index]);
-
   let interval = setInterval(() => {
     // spend 3 seconds between turns to show the card them move the player
     const move = allTurnsInRound[index++];
     const player = board.hasPlayer(move.id);
     const team1 = board.team1.hasPlayer(move.id);
+    
     // show the card on the display
     publishCard({player: player.name, color: team1 ? board.team1.color : board.team2.color, card: move.card});
   
     // wait to play to the turn until after the card has been displayed
     setTimeout(() => {
       // remove the card and update the board
-      playTurn(move);
-
+      let endRound = playTurn(move) || index >= allTurnsInRound.length;
+      
       // if all the moves have been played then clear the deals and shuffle and deal the cards
-      if (index >= allTurnsInRound.length) {
+      if (endRound) {
         currentDeal.clear();
         returnCards.clear();
         shuffleAndDeal();
         clearInterval(interval);
         fixPlayers();
+        publishBoard();
       }  
     }, 2000);
 
@@ -208,5 +218,20 @@ function playRound() {
 
 function playTurn(move) {
   board.movePlayer(move);
+  const endRound = hasEndRoundCondition()
   publishBoard();
+
+  return endRound;  
+}
+
+function hasEndRoundCondition() {
+  return board.checkEndRoundCondition();
+}
+
+function fixPlayers() {
+  const updatePlayers = board.fixPlayers();
+  updatePlayers.forEach((p) => {
+    const ws = playerMap.get(p.id);
+    sendMessage(ws, 'player', p);
+  });
 }

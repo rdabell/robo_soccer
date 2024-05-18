@@ -32,6 +32,8 @@ let socket;
 
 let displayedCards = [];
 let selectedCards = [null, null, null, null, null];
+let interval = 0;
+let timeleft = 15;
 
 function messageHandler(message) {
   const parsedMessage = JSON.parse(message);
@@ -40,18 +42,54 @@ function messageHandler(message) {
       $('body').load('game_play.html', null, () => {
         $('#name').text(player.name);
         displayCards(parsedMessage.data);
+        updatePlayer();
       });
       break;
     case 'player':
-      player = parsedMessage.data;
-      if (player == null) {
+      let p = parsedMessage.data;
+      if (p == null) {
         $('body').load('create_user.html');
       } else {
-        $('body').load('game_play.html', null, () => {
-          $('#name').text(player.name);
-        });
+        if (!player) {
+          player = p;
+          $('body').load('game_play.html', null, () => {
+            updatePlayer();
+            $('#name').text(p.name);
+
+          });
+        } else {
+          player = p;
+          updatePlayer();
+        }
       }
       break;
+    case 'time':
+      if (!interval) {
+        timeleft = 15;
+        interval = setInterval(() => {
+          timeleft--;
+          updateTime(timeleft);
+          if (timeleft <= 0) {
+            clearInterval(interval);
+            interval = 0;
+            timesUp();
+          }
+        }, 1000);
+      }
+      break;
+  }
+}
+
+function updatePlayer() {
+  $('#name').text(player.name);
+  if (player.deaths >= 1) {
+    $('#warning').addClass('show');
+    if (player.deaths >= 2) {
+      $('#yellow').addClass('show');
+      if (player.deaths >= 3) {
+        $('#red').addClass('show');
+      }
+    }
   }
 }
 
@@ -73,7 +111,6 @@ function createUser() {
       $('#name').text(player.name);
     });  
   }
-
 }
 
 function displayCards(cards) {
@@ -88,8 +125,6 @@ function displayCards(cards) {
     index ++;
   });
 }
-
-
 
 let draggingNumber = null;
 
@@ -140,8 +175,38 @@ function allowDrop(event) {
 }
 
 function submitCards() {
+  if (interval) {
+    this.clearInterval(interval);
+    interval = 0;
+  }
+
+ $('#timeleft').text('');
+  $('#submit-button').attr('disabled', true);
   $('#card-pool').html('');
   socket.send(JSON.stringify({key: 'submit-cards', data: {id, cards: selectedCards}}));
   selectedCards = [null, null, null, null, null];
   displayedCards = [];
+}
+
+function updateTime() {
+  $('#timeleft').text(`${timeleft} seconds to submit`);
+}
+
+function timesUp() {
+  $('#timeleft').text('');
+  
+  if (this.displayedCards) {
+    const deck = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const selection = [];
+    for(let i = 0; i < 5; i++) {
+      const cardIndex = Math.floor(Math.random() * (deck.length - 1));
+      const cardId = deck.splice(cardIndex, 1)[0];
+      selection.push(cardId);
+      const node = $(`#card${cardId}`)[0];
+      $(`#place${i}`)[0].appendChild(node);
+    }
+
+    selectedCards = selection;
+    submitCards();
+  }
 }

@@ -159,8 +159,11 @@ class Board {
   movePlayer(move) {
     const playerId = move.id;
     const player = this.hasPlayer(playerId);
+    if (player.isDead) {
+      return;
+    }
+
     const card = move.card;
-    console.log(JSON.stringify(move));
     switch(card.a) {
       case Actions.Move1Action:
         this.movePlayerForward(player, 1);        
@@ -204,38 +207,57 @@ class Board {
   }
 
   movePlayerBackward(player) {
-    player.pos.move((player.pos.d + 2) % 4, 1);
+    const ballControl = this.hasBallControl(player);
+    const backwardDirection = (player.pos.d + 2) % 4;
+    const objects = this.objectsToMove(player, true);
+    if (objects != null) {
+      player.pos.move(backwardDirection, 1);
+      objects.forEach(space => {
+        if (space instanceof Player) {
+          space.pos.move(backwardDirection, 1);
+        } else if (space === this.ball) {
+          this.ball.pos.move(backwardDirection, 1);
+        }
+      });
+      if (ballControl) {
+        this.ball.pos.move(backwardDirection, 1);
+      }
+    }
   }
 
   /**
    * Gets a list of objects that need to move because of a move action, if this is null, not even the player should move, if it is empty then only the player should move
    * @param pos the position with direction
    */
-  objectsToMove(player) {
+  objectsToMove(player, backwards = false) {
     const objects = [];
-    let space = 1;
-    let nextSpace = this.inFrontOfPlayer(player, space++);
+    let space = backwards ? -1 : 1;
+    let nextSpace = this.inFrontOfPlayer(player, backwards ? space-- : space++);
     while (nextSpace != null && nextSpace != this.Endzone) {
       if (nextSpace === this.OutOfBounds) {
         return null;
       }
       objects.push(nextSpace);      
-      nextSpace = this.inFrontOfPlayer(player, space++);
+      nextSpace = this.inFrontOfPlayer(player, backwards ? space-- : space++);
     }
 
     return objects;
   }
 
   whatIsHere(pos) {
-    if (this.ball.pos.x === pos.x && this.ball.pos.y === pos.y) return this.ball;
+    if (pos.x < this.endzoneDepth || pos.x >= this.fieldLength - this.endzoneDepth) {
+      if (pos.y >= 3 && pos.y <= 5) {
+        return this.Endzone;
+      } else {
+        return this.OutOfBounds;
+      }
+    }
 
     if (pos.y < 0 || pos.y >= this.fieldWidth) {
       return this.OutOfBounds;
     }
 
-    if (pos.x < this.endzoneDepth || pos.x >= this.endzoneDepth + this.fieldLength) {
-      return this.Endzone;
-    }
+    if (this.ball.pos.x === pos.x && this.ball.pos.y === pos.y) return this.ball;
 
     return this.team1.players.find(p => pos.x === p.pos.x && pos.y === p.pos.y) || 
            this.team2.players.find(p => pos.x === p.pos.x && pos.y === p.pos.y) ||
@@ -308,12 +330,83 @@ class Board {
     return this.inFrontOfPlayer(player, 1) == this.ball;
   }
 
+  fixPlayers() {
+    const updatePlayers = [];
+    this.team1.players.forEach(p => this.resurrectPlayer(p) ?? updatePlayers.push(p));
+    this.team2.players.forEach(p => this.resurrectPlayer(p) ?? updatePlayers.push(p));
+
+    return updatePlayers;
+  }
+
   resurrectPlayer(player) {
-    if (player.isDead && player.deaths < this.MaxDeaths) {
-      if (this.whatIsHere(player.defaultPosition) == null) {
-        this.player
+    if (player.isDead && player.deaths < MaxDeaths) {
+      const pos = this.findOpenSpotAround(player.defaultPosition);
+      player.pos.copyFrom(pos);
+      player.isDead = false;
+      return player;
+    }
+
+    return null;
+  }
+
+  findOpenSpotAround(pos) {
+    if (this.whatIsHere(pos) == null) {
+      return pos;
+    }
+
+    const positions = [
+      {x: pos.x + 1, y: pos.y},
+      {x: pos.x, y: pos.y + 1},
+      {x: pos.x - 1, y: pos.y},
+      {x: pos.x, y: pos.y - 1},
+      {x: pos.x + 1, y: pos.y + 1},
+      {x: pos.x + 1, y: pos.y - 1},
+      {x: pos.x - 1, y: pos.y + 1},
+      {x: pos.x - 1, y: pos.y - 1}
+    ];
+    const newPos = new Position();
+    newPos.copyFrom(pos);
+
+    for(let p of positions) {
+      newPos.x = p.x;
+      newPos.y = p.y;
+      if (this.whatIsHere(newPos) == null) {
+        return newPos;
       }
     }
+
+    this.whatIsHere()
+  }
+
+  checkEndRoundCondition() {
+    const checkPlayer = (p) => {
+      if (!p.isDead && this.whatIsHere(p.pos) === this.Endzone) {
+        p.isDead = true;
+        p.deaths++;
+      };
+    };
+
+    this.team1.players.forEach(p => checkPlayer(p));
+    this.team2.players.forEach(p => checkPlayer(p));
+    if (this.whatIsHere(this.ball.pos) === this.Endzone) {
+      if (this.ball.pos.x < this.endzoneDepth) {
+        this.team2.score++;
+      } else {
+        this.team1.score++;
+      }
+
+      this.reset();
+      return true;
+    }
+
+    return false;
+  }
+
+  reset() {
+    this.team1.players.forEach(p => p.pos.copyFrom(p.defaultPosition));
+    this.team2.players.forEach(p => p.pos.copyFrom(p.defaultPosition));
+    this.ball.pos.x = Math.floor(FieldLength / 2);
+    this.ball.pos.y = Math.floor(FieldWidth / 2);
   }
 }
 

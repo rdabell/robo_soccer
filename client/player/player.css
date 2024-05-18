@@ -1,2 +1,43 @@
+#name {
+  font-size: 2em;
+  font-weight: bold;
+}
 
+.cards {
+  display: inline-flex;
+}
+
+#warning {
+  height: 4rem;
+  width: 3rem;
+  border-radius: 2px;
+  border: 1px solid black;
+}
+
+#warning.show {
+  background: #FFCF00;
+}
+
+#yellow {
+  height: 4rem;
+  width: 3rem;
+  border-radius: 2px;
+  border: 1px solid black;
+}
+
+#yellow.show {
+  background: #FFCF00;
+}
+
+#red {
+  height: 4rem;
+  width: 3rem;
+  border: 1px solid black;
+  border-radius: 2px;
+}
+
+#red.show {
+  background: #F00;
+
+}
 

@@ -103,9 +103,14 @@ function DrawField(board) {
   ctx.lineWidth = 20;
   ctx.strokeStyle = board.team1.color;
   ctx.strokeRect(10, 10, gd * board.endzoneDepth - 20, gd * board.fieldWidth - 20);
-
+  ctx.lineWidth = 3;
+  ctx.strokeText(board.team1.score, gd, gd);
+  
+  ctx.lineWidth = 20;
   ctx.strokeStyle = board.team2.color;
   ctx.strokeRect(gd * (board.fieldLength - board.endzoneDepth) + 10, 10, gd * board.endzoneDepth - 20, gd * board.fieldWidth - 20);
+  ctx.lineWidth = 3;
+  ctx.strokeText(board.team2.score, gd * (board.fieldLength - board.endzoneDepth + 1), gd);
   ctx.restore();
 
   ctx.strokeRect(gd * 2, 0, gd * (board.fieldLength - 4), gd * board.fieldWidth);
@@ -132,9 +137,25 @@ function DrawField(board) {
   ctx.lineTo(gd * (board.fieldLength - board.endzoneDepth - 2), gd * (board.fieldWidth - 2));
   ctx.lineTo(gd * (board.fieldLength - board.endzoneDepth), gd * (board.fieldWidth - 2));
   ctx.stroke();
+
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.moveTo(gd * board.endzoneDepth, gd * 3);
+  ctx.lineTo(gd * (board.endzoneDepth - 1), gd * 3);
+  ctx.lineTo(gd * (board.endzoneDepth - 1), gd * (board.fieldWidth - 3));
+  ctx.lineTo(gd * board.endzoneDepth, gd * (board.fieldWidth - 3));
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(gd * (board.fieldLength - board.endzoneDepth), gd * 3);
+  ctx.lineTo(gd * (board.fieldLength - board.endzoneDepth + 1), gd * 3);
+  ctx.lineTo(gd * (board.fieldLength - board.endzoneDepth + 1), gd * (board.fieldWidth - 3));
+  ctx.lineTo(gd * (board.fieldLength - board.endzoneDepth), gd * (board.fieldWidth - 3));
+  ctx.stroke();
 }
 
 function DrawBall(ball) {
+  ctx.lineWidth = 4;
   ctx.fillStyle = '#000';
   ctx.beginPath();  
   ctx.arc(ball.pos.x * gd + gd/2, ball.pos.y * gd + gd/2, gd * .33, 0, Math.PI * 2);
@@ -151,6 +172,10 @@ function DrawRobots(board) {
 }
 
 function DrawRobot(team, player) {
+  if (player.isDead) {
+    return;
+  }
+  
   ctx.save();
     ctx.fillStyle = '#333';
     ctx.strokeStyle = '#000';
@@ -163,7 +188,6 @@ function DrawRobot(team, player) {
           ctx.rotate(Math.PI * .5);
           break;
         case 1: // north
-          
           break;
         case 2: // west
           ctx.rotate(-Math.PI * .5);
@@ -174,7 +198,6 @@ function DrawRobot(team, player) {
       }
 
       // draw the base
-
       ctx.fillStyle=team.color;
       ctx.beginPath();
       ctx.arc(0, 0, gd/(2*Math.sqrt(2)), -Math.PI * 1/4, -Math.PI * 3/4);
