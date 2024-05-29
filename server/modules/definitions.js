@@ -233,8 +233,8 @@ class Board {
     const objects = [];
     let space = backwards ? -1 : 1;
     let nextSpace = this.inFrontOfPlayer(player, backwards ? space-- : space++);
-    while (nextSpace != null && nextSpace != this.Endzone) {
-      if (nextSpace === this.OutOfBounds) {
+    while (nextSpace != null && nextSpace != Endzone) {
+      if (nextSpace === OutOfBounds) {
         return null;
       }
       objects.push(nextSpace);      
@@ -247,14 +247,14 @@ class Board {
   whatIsHere(pos) {
     if (pos.x < this.endzoneDepth || pos.x >= this.fieldLength - this.endzoneDepth) {
       if (pos.y >= 3 && pos.y <= 5) {
-        return this.Endzone;
+        return Endzone;
       } else {
-        return this.OutOfBounds;
+        return OutOfBounds;
       }
     }
 
     if (pos.y < 0 || pos.y >= this.fieldWidth) {
-      return this.OutOfBounds;
+      return OutOfBounds;
     }
 
     if (this.ball.pos.x === pos.x && this.ball.pos.y === pos.y) return this.ball;
@@ -267,8 +267,8 @@ class Board {
   kick(player) {
     const spaces = [this.inFrontOfPlayer(player, 1), this.inFrontOfPlayer(player, 2), this.inFrontOfPlayer(player, 3)];
     if (spaces[0] === this.ball) {
-      if (spaces[1] == null || spaces[1] === this.Endzone) {
-        if (spaces[2] == null || spaces[2] === this.Endzone) {
+      if (spaces[1] == null || spaces[1] === Endzone) {
+        if (spaces[2] == null || spaces[2] === Endzone) {
           this.ball.pos.move(player.pos.d, 2);
         } else {
           this.ball.pos.move(player.pos.d, 1);
@@ -380,7 +380,7 @@ class Board {
 
   checkEndRoundCondition() {
     const checkPlayer = (p) => {
-      if (!p.isDead && this.whatIsHere(p.pos) === this.Endzone) {
+      if (!p.isDead && this.whatIsHere(p.pos) === Endzone) {
         p.isDead = true;
         p.deaths++;
       };
@@ -388,7 +388,7 @@ class Board {
 
     this.team1.players.forEach(p => checkPlayer(p));
     this.team2.players.forEach(p => checkPlayer(p));
-    if (this.whatIsHere(this.ball.pos) === this.Endzone) {
+    if (this.whatIsHere(this.ball.pos) === Endzone) {
       if (this.ball.pos.x < this.endzoneDepth) {
         this.team2.score++;
       } else {

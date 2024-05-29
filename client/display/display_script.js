@@ -85,6 +85,7 @@ function DrawField(board) {
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.strokeStyle = '#bbb';
   ctx.fillStyle = ctx.strokeStyle;
   ctx.font = `${Math.floor(gd / 2)}px arial`;
   for (let i = 0; i < board.fieldLength - board.endzoneDepth * 2; i++) {
